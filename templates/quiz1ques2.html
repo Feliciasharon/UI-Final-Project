@@ -1,0 +1,123 @@
+{% extends "index.html" %}
+
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 40px;
+  padding: 0 20px;
+}
+
+.side-button {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.side-button.right {
+  justify-content: flex-end;
+}
+
+.center-button {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+.back-link,
+.next-link {
+  font-weight: bold;
+  color: #770fdb;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.back-link:hover,
+.next-link:hover {
+  text-decoration: underline;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.round-btn {
+  border: none;
+  border-radius: 50px;
+  padding: 14px 30px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+}
+
+.submit-btn {
+  background-color: #770fdb;
+}
+
+.submit-btn:hover {
+  background-color: #5f09b0;
+}
+
+</style>
+
+<div class="quiz-container">
+  <div class="quiz-header">
+    <h1>QUIZ</h1>
+    <p>This or That?</p>
+    <p class="question">Q2. Which product is more hydrating and great for dull or dehydrated skin?
+    </p>
+  </div>
+
+  <form class="quiz-options image-options">
+    <label class="image-option">
+      <input type="radio" name="product" value="Toner">
+      <div class="img-wrapper">
+        <img src="{{ url_for('static', filename='images/toner.png') }}" alt="Toner">
+        <div class="tick-overlay">✔</div>
+      </div>
+      <span>Toner</span>
+    </label>
+  
+    <label class="image-option">
+      <input type="radio" name="product" value="Essence">
+      <div class="img-wrapper">
+        <img src="{{ url_for('static', filename='images/essence.png') }}" alt="Essence">
+        <div class="tick-overlay">✔</div>
+      </div>
+      <span>Essence</span>
+    </label>
+  </form>
+  
+
+  <p id="result-msg" style="font-weight: bold; margin-top: 20px;"></p>
+  <!-- <div id="quizMessage" class="quiz-message" style="display: none;"></div> -->
+
+  <div class="button-row">
+    <div class="side-button left">
+      <button class="back-link" onclick="history.back()">← BACK</button>
+    </div>
+
+    <div class="center-button">
+      <div class="action-buttons">
+        <button id="submitBtn" class="round-btn submit-btn">Submit</button>
+      </div>
+    </div>
+
+    <div class="side-button right">
+      <!-- <a href="/quiz1/q2" id="nextBtn" class="next-link" style="display: none;">NEXT →</a> -->
+      <a id="nextBtn" class="next-link" style="display: none;" onclick="goToNext()">NEXT →</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

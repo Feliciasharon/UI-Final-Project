@@ -1,0 +1,483 @@
+{% extends "index.html" %}
+
+{% block content %}
+
+    <center>
+
+    <h1 id="routinetopic">Build your {{step}}-step routine</h1><br>
+    <h4>Based on the range of products that we learnt, build a routine that make the most sense for your needs</h4><br><br>
+    <h6>(Drag and drop the products in the correct boxes)</h6><br>
+
+    </center>
+
+    <div class="step-container">
+        <div class="box-wrapper">
+          <label class="box-label">Step 1</label>
+          <div class="hollow-box" id="box1"></div>
+        </div>
+        <div class="box-wrapper">
+          <label class="box-label">Step 2</label>
+          <div class="hollow-box" id="box2"></div>
+        </div>
+        <div class="box-wrapper">
+          <label class="box-label">Step 3</label>
+          <div class="hollow-box" id="box3"></div>
+        </div>
+      </div>
+      <br><br>
+
+
+      <div class="products-row1-container">
+        <div class="box-wrapper">
+          <div id="products1" class="products"><img id="cleanser" class="product-images" title='Face cleanser' src='/static/images/cleanser2.png' alt="cleanser"></div>
+          <label class="products-label">Cleanser</label>
+        </div>
+        <div class="box-wrapper">
+          <div id="products2" class="products"><img id='toner' class="product-images" title='Face toner' src='/static/images/toner.png' alt="toner"></div>
+          <label class="products-label">Toner</label>
+        </div>
+        <div class="box-wrapper">
+          <div id="products3" class="products"><img id="essence" class="product-images" title='Essence' src='/static/images/essence.png' alt="essence"></div>
+          <label class="products-label">Essence</label>
+        </div>
+        <div class="box-wrapper">
+            <div id="products4" class="products"><img id='eye-cream' class="product-images" title='Eye Cream' src='/static/images/eye_cream.png' alt="eye cream"></div>
+            <label class="products-label">Eye cream</label>
+          </div>
+          <div class="box-wrapper">
+            <div id="products5" class="products"><img id="moisturizer" class="product-images" title='Moisturizer' src='/static/images/moisturizer.png' alt="moisturizer"></div>
+            <label class="products-label">Moisturizer</label>
+          </div>
+      </div>
+
+
+      <div class="products-row2-container">
+        <div class="box-wrapper">
+          <div cid="products6" class="products"><img id='serum' class="product-images" title='Serum' src='/static/images/serum.png' alt="serum"></div>
+          <label class="products-label">Serum</label>
+        </div>
+        <div class="box-wrapper">
+            <div id="products7" class="products"><img id="spot-treatment" class="product-images" title='Spot treatment' src='/static/images/spot_treatment.png' alt="spot treatment"></div>
+            <label class="products-label">Spot treatment</label>
+          </div>
+          <div class="box-wrapper">
+            <div id="products8" class="products"><img id="sunscreen" class="product-images" title='Sunscreen' src='/static/images/sunscreen.png' alt="sunscreen"></div>
+            <label class="products-label">Sunscreen</label>
+          </div>
+      </div>
+
+      <br><br>
+  
+      <div class="container">
+
+
+<center>
+<button type="button" class="reset btn btn-secondary col-md-2 col-2" onclick="reset3()">Reset</button>
+<button type="button" id="evaluate" class="btn btn-primary btn-lg col-md-2 col-2" onclick="eval()">Evaluate</button>
+<br><span id="routinestatus" class="default col-md-4 col-12"></span><br>           
+</center>
+<button style="margin-left: 90%; width: 150px;" type="button" class="finish btn btn-outline-success" onclick="window.location.href='/routine-summary'" disabled>View summary</button>
+
+  <style>
+    .reset {
+        width: 100px;
+    }
+
+    #evaluate {
+        background-color: #770fdb;
+        color: white;
+        width: 150px;
+        border: none !important;
+        border-radius: 5px;
+        box-shadow: none !important;
+    }
+
+    #evaluate:hover {
+        background-color: #5b07aa !important;
+    }
+
+    #evaluate.clicked {
+        background-color: #5b07aa;
+        box-shadow: 0 0 15px #bb81f1 !important;
+    }
+
+
+    .step-container {
+      display: flex;
+      gap: 60px; /* space between boxes */
+      justify-content: center;
+      margin-top: 40px;
+    }
+
+    .products-row1-container, .products-row2-container {
+      display: flex;
+      gap: 30px; /* space between boxes */
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .box-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .box-label {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .products-label {
+      font-weight: bold;
+      margin-top: 0px;
+    }
+
+    .hollow-box {
+      width: 200px;
+      height: 200px;
+      border: 5px dashed #000;
+      border-radius: 6px;
+      background-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+  </style>
+
+  <script>
+    document.getElementById("evaluate").addEventListener("click", function () {
+    this.classList.add("clicked");
+
+    // Remove the class after 1 second (1000 ms)
+    setTimeout(() => {
+        this.classList.remove("clicked");
+    }, 1000);
+    });
+
+
+
+
+    function makeDraggable($el) {
+    $el.draggable({
+      revert: "invalid",
+      containment: "body",
+      stack: ".product-images",
+      start: function () {
+        var previousDrop = $(this).data("droppedOn");
+        if (previousDrop) {
+            $("#"+previousDrop).droppable('enable');
+            $("#"+previousDrop).removeClass("ondrop");
+            sessionStorage.setItem(previousDrop,'');
+
+        }
+        // Remove transform to avoid jump on next drag
+        $(this).css("transform", "");
+      }
+    });
+  }
+
+
+  $(".products").droppable({
+    over: function(event, ui) {
+      $(this).addClass("hover");
+    },
+    out: function(event, ui) {
+      $(this).removeClass("hover");
+    },
+    drop: function(event, ui) {
+      $(this)
+        .removeClass("hover")
+        .droppable("disable")
+        var previousDrop = ui.helper.data("droppedOn");
+
+        if (previousDrop) {
+          if (previousDrop.startsWith('product')) {
+            console.log(previousDrop+"inside product");
+            $("#"+previousDrop).droppable("enable");
+          }
+        }
+
+        if (previousDrop==='box1') {
+          box1='';
+          sessionStorage.setItem('box1','');
+          $("#box1").removeClass("ondrop")
+          $("#box1").droppable("enable");
+        } else if (previousDrop==='box2') {
+          box2='';
+          sessionStorage.setItem('box2','');
+          $("#box2").removeClass("ondrop")
+          $("#box2").droppable("enable");
+        } else if (previousDrop==='box3') {
+          box3='';
+          sessionStorage.setItem('box3','');
+          $("#box3").removeClass("ondrop")
+          $("#box3").droppable("enable");
+        } else if (previousDrop==='boxx1') {
+          boxx1='';
+          sessionStorage.setItem('boxx1','');
+          $("#boxx1").removeClass("ondrop")
+          $("#boxx1").droppable("enable");
+        } else if (previousDrop==='boxx2') {
+          boxx2='';
+          sessionStorage.setItem('boxx2','');
+          $("#boxx2").removeClass("ondrop")
+          $("#boxx2").droppable("enable");
+        } else if (previousDrop==='boxx3') {
+          boxx3='';
+          sessionStorage.setItem('boxx3','');
+          $("#boxx3").removeClass("ondrop")
+          $("#boxx3").droppable("enable");
+        } else if (previousDrop==='boxx4') {
+          boxx4='';
+          sessionStorage.setItem('boxx4','');
+          $("#boxx4").removeClass("ondrop")
+          $("#boxx4").droppable("enable");
+        } else if (previousDrop==='boxx5') {
+          boxx5='';
+          sessionStorage.setItem('boxx5','');
+          $("#boxx5").removeClass("ondrop")
+          $("#boxx5").droppable("enable");
+        } 
+        ui.helper.data("droppedOn", $(this).attr("id"));
+        
+    }
+  });
+
+    $("#box1").droppable({
+    over: function(event, ui) {
+      $(this).addClass("hover");
+    },
+    out: function(event, ui) {
+      $(this).removeClass("hover");
+    },
+    drop: function(event, ui) {
+      $(this)
+        .removeClass("hover")
+        .addClass("ondrop")
+        .droppable("disable")
+
+        box1 = ui.draggable.attr("id");
+        var previousDrop = ui.helper.data("droppedOn");
+
+        if (previousDrop) {
+          if (previousDrop.startsWith('product')) {
+            $("#"+previousDrop).droppable("enable");
+          }
+        }
+
+
+        if (box1===box2) {
+          box2='';
+          sessionStorage.setItem('box2','');
+          $("#box2").droppable("enable");
+          $("#box2").removeClass("ondrop")
+        } else if (box1===box3) {
+          box3='';
+          sessionStorage.setItem('box3','');
+          $("#box3").droppable("enable");
+          $("#box3").removeClass("ondrop")
+        } 
+
+        ui.helper.data("droppedOn", $(this).attr("id"));
+
+        const $box = $(this);
+      const $item = ui.draggable;
+
+      // Move into the box
+      $item.appendTo($box);
+
+      // Center inside the box
+      const boxWidth = $box.width();
+      const boxHeight = $box.height();
+      const itemWidth = $item.outerWidth();
+      const itemHeight = $item.outerHeight();
+
+      $item.css({
+        position: "absolute",
+        left: (boxWidth - itemWidth) / 3 + "px",
+        top: (boxHeight - itemHeight) / 3 + "px"
+      });
+
+      // Reinitialize draggable after drop
+      makeDraggable($item);
+
+    }
+  });
+
+  $("#box2").droppable({
+    over: function(event, ui) {
+      $(this).addClass("hover");
+    },
+    out: function(event, ui) {
+      $(this).removeClass("hover");
+    },
+    drop: function(event, ui) {
+      $(this)
+        .removeClass("hover")
+        .droppable("disable")
+        .addClass("ondrop")
+
+        box2 = ui.draggable.attr("id");
+        var previousDrop = ui.helper.data("droppedOn");
+
+        if (previousDrop) {
+          if (previousDrop.startsWith('product')) {
+            $("#"+previousDrop).droppable("enable");
+          }
+        }
+
+        if (box1===box2) {
+          box1='';
+          sessionStorage.setItem('box1','');
+          $("#box1").droppable("enable");
+          $("#box1").removeClass("ondrop")
+        } else if (box2===box3) {
+          box3='';
+          sessionStorage.setItem('box3','');
+          $("#box3").droppable("enable");
+          $("#box3").removeClass("ondrop")
+        }
+
+        ui.helper.data("droppedOn", $(this).attr("id"));  
+
+        const $box = $(this);
+        const $item = ui.draggable;
+  
+        // Move into the box
+        $item.appendTo($box);
+  
+        // Center inside the box
+        const boxWidth = $box.width();
+        const boxHeight = $box.height();
+        const itemWidth = $item.outerWidth();
+        const itemHeight = $item.outerHeight();
+  
+        $item.css({
+          position: "absolute",
+          left: (boxWidth - itemWidth) / 8 + "px",
+          top: (boxHeight - itemHeight) / 8 + "px"
+        });
+  
+        // Reinitialize draggable after drop
+        makeDraggable($item);
+    }
+  });
+
+  $("#box3").droppable({
+    over: function(event, ui) {
+      $(this).addClass("hover");
+    },
+    out: function(event, ui) {
+      $(this).removeClass("hover");
+    },
+    drop: function(event, ui) {
+      $(this)
+        .removeClass("hover")
+        .droppable("disable")
+        .addClass("ondrop")
+
+        box3 = ui.draggable.attr("id");
+        var previousDrop = ui.helper.data("droppedOn");
+
+        if (previousDrop) {
+          if (previousDrop.startsWith('product')) {
+            $("#"+previousDrop).droppable("enable");
+          }
+        }
+
+        if (box3===box1) {
+          box1='';
+          sessionStorage.setItem('box1','');
+          $("#box1").droppable("enable");
+          $("#box1").removeClass("ondrop")
+        } else if (box2===box3) {
+          box2='';
+          sessionStorage.setItem('box2','');
+          $("#box2").droppable("enable");
+          $("#box2").removeClass("ondrop")
+        }
+        ui.helper.data("droppedOn", $(this).attr("id")); 
+
+        const $box = $(this);
+        const $item = ui.draggable;
+  
+        // Move into the box
+        $item.appendTo($box);
+  
+        // Center inside the box
+        const boxWidth = $box.width();
+        const boxHeight = $box.height();
+        const itemWidth = $item.outerWidth();
+        const itemHeight = $item.outerHeight();
+  
+        $item.css({
+          position: "absolute",
+          left: (boxWidth - itemWidth) / 8 + "px",
+          top: (boxHeight - itemHeight) /8 + "px"
+        });
+  
+        // Reinitialize draggable after drop
+        makeDraggable($item);
+    }
+  });
+
+
+    function saveroutine() {
+  box1 = sessionStorage.getItem('box1');
+  box2 = sessionStorage.getItem('box2');
+  box3 = sessionStorage.getItem('box3');
+  
+  
+  if (box1 && box2 && box3) {
+  
+  if (box1!=='') {
+
+    $box = "#box1";
+    $item = "#"+box1;
+    var fakeEvent = jQuery.Event("drop");
+    var fakeUI = {
+      draggable: $($item),
+      helper: $($item),
+      offset: $($item).offset(),
+      position: $($item).position()
+    };
+    $($box).droppable("option", "drop").call($($box)[0], fakeEvent, fakeUI);
+  }
+
+  if (box2!=='') {
+    $box = "#box2";
+    $item = "#"+box2;
+    var fakeEvent = jQuery.Event("drop");
+    var fakeUI = {
+      draggable: $($item),
+      helper: $($item),
+      offset: $($item).offset(),
+      position: $($item).position()
+    };
+    $($box).droppable("option", "drop").call($($box)[0], fakeEvent, fakeUI);
+
+  }
+  if (box3!=='') {
+    $box = "#box3";
+    $item = "#"+box3;
+    var fakeEvent = jQuery.Event("drop");
+    var fakeUI = {
+      draggable: $($item),
+      helper: $($item),
+      offset: $($item).offset(),
+      position: $($item).position()
+    };
+    $($box).droppable("option", "drop").call($($box)[0], fakeEvent, fakeUI);
+
+  }
+  }
+}
+
+saveroutine();
+
+
+
+  </script>
+{% endblock %}

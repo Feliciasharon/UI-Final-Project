@@ -1,0 +1,130 @@
+{% extends "index.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<div class="quiz-container" style="max-width: 950px; margin: 0 auto; padding: 40px 20px;">
+  <div class="quiz-header" style="margin-bottom: 30px;">
+    <h1 style="color: #770fdb; font-size: 3rem; font-weight: bold;">QUIZ</h1>
+    <p style="color: #770fdb; font-weight: 600;">Scenario-Based Question:</p>
+    <p class="question" style="font-size: 1.3rem; margin-top: 10px; line-height: 1.6;">
+      Q4. You’re heading into winter and your skin starts feeling tight and flaky. You already use a cleanser and sunscreen. What combination of nourish products might help the most?
+    </p>
+  </div>
+
+  <form class="quiz-options" id="nourishForm" style="display: flex; flex-direction: column; gap: 25px;">
+    {% for opt in [
+      {'val': 'A', 'text': 'Spot treatment and toner', 'imgs': ['spot_treatment.png', 'toner.png']},
+      {'val': 'B', 'text': 'Serum with hyaluronic acid and a moisturizer with ceramides', 'imgs': ['serum.png', 'moisturizer.png']},
+      {'val': 'C', 'text': 'Eye cream with caffeine and spot treatment', 'imgs': ['eye_cream.png', 'spot_treatment.png']},
+      {'val': 'D', 'text': 'Only sunscreen', 'imgs': ['sunscreen.png']}
+    ] %}
+    <label class="quiz-option" style="
+      border: 2px solid #ccc;
+      border-radius: 15px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      background-color: #fdf9ff;
+      box-shadow: 2px 2px 8px rgba(119, 15, 219, 0.1);
+      cursor: pointer;
+    ">
+      <input type="radio" name="nourishQuiz" value="{{ opt.val }}" data-text="{{ opt.text }}" style="margin-bottom: 10px; transform: scale(1.3); margin-right: 10px;" />
+      <strong style="font-size: 1.1rem;">{{ opt.val }}. {{ opt.text }}</strong>
+      <div style="display: flex; gap: 20px; margin-top: 15px;">
+        {% for img in opt.imgs %}
+        <img src="{{ url_for('static', filename='images/' + img) }}" alt="Product" style="width: 100px; height: 100px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);" />
+        {% endfor %}
+      </div>
+    </label>
+    {% endfor %}
+  </form>
+
+  <p id="result-msg" style="font-weight: bold; font-size: 1.2rem; margin-top: 25px;"></p>
+
+  <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <button class="back-btn" onclick="history.back()">← Back</button>
+    <button type="button" id="submitBtn" onclick="submitNourishAnswer()" style="padding: 12px 30px; background-color: #770fdb; color: white; border: none; font-weight: bold; font-size: 16px; border-radius: 8px; cursor: pointer;">Submit</button>
+    <button id="nextBtn" class="back-btn" style="display: none;" onclick="goToNext()">Next →</button>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById("nourishForm");
+const submitBtn = document.getElementById("submitBtn");
+
+// Restore and lock if previously submitted
+function lockQuiz() {
+  // Disable all radio buttons
+  document.querySelectorAll('input[name="nourishQuiz"]').forEach(radio => {
+    radio.disabled = true;
+  });
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = 0.5;
+}
+
+function restoreAnswer() {
+  if (!quizState.answered) return;
+
+  const selectedText = quizState.user_answer;
+  const isCorrect = quizState.is_correct;
+
+  document.querySelectorAll('input[name="nourishQuiz"]').forEach(radio => {
+    if (radio.dataset.text === selectedText) {
+      radio.checked = true;
+    }
+  });
+
+  resultMsg.textContent = isCorrect
+    ? "✅ Correct! Great choice for dry, winter skin."
+    : "❌ Oops! The best option is serum + moisturizer.";
+  resultMsg.style.color = isCorrect ? "green" : "red";
+  nextBtn.style.display = "inline-block";
+
+  lockQuiz();
+}
+
+function submitNourishAnswer() {
+  const resultMsg = document.getElementById("result-msg");
+  const selected = document.querySelector('input[name="nourishQuiz"]:checked');
+  if (!selected) {
+    resultMsg.textContent = "⚠️ Please select an option.";
+    resultMsg.style.color = "darkorange";
+    return;
+  }
+  const selectedValue = selected.value;
+  const selectedText = selected.dataset.text;
+  const isCorrect = selectedValue === "B";
+
+  resultMsg.textContent = isCorrect
+    ? "✅ Correct! Great choice for dry, winter skin."
+    : "❌ Oops! The best option is serum + moisturizer.";
+  resultMsg.style.color = isCorrect ? "green" : "red";
+  document.getElementById("nextBtn").style.display = "inline-block";
+
+  if (isCorrect) {
+    confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 } });
+  }
+
+  fetch("/submit-quiz/4", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ answer: selectedText, is_correct: isCorrect })
+  })
+  // .then(() => fetch("/save-progress", {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" }
+  // }))
+  // .then(res => res.json())
+  .then(data => console.log("✅ Progress saved", data))
+  .catch(err => console.error("❌ Error saving", err));
+}
+
+// function goToNext() {
+//   window.location.href = "/learn/sunscreen";
+// }
+
+// Restore on load if answered
+document.addEventListener("DOMContentLoaded", restoreAnswer);
+</script>
+
+{% endblock %}

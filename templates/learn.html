@@ -1,0 +1,86 @@
+{% extends "index.html" %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+<!-- <a href="/quiz1/q1" class="step quiz-step">Q1. Cleansing</a> -->
+
+
+<div id="learn">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="section-label">Cleanse & Prep</div>
+    <div class="step">1. Cleanser</div>
+    <div class="step">2. Toner</div>
+    <div class="step">3. Essence</div>
+
+
+    <div class="section-label">Nourish</div>
+    <div class="step">4. Serum</div>
+    <div class="step">5. Eye Cream</div>
+    <div class="step">6. Spot Treatment</div>
+    <div class="step">7. Moisturizer</div>
+
+  
+    <div class="section-label">Protect</div>
+    <div class="step">8. Sunscreen</div>
+
+  </div>
+
+  <!-- Content Area -->
+  <div class="content" id="content">
+    <div class="step-content">
+      <!-- TEXT ON LEFT -->
+      <div class="step-text">
+        <h2 id="step-title">Cleanser</h2>
+        <p id="step-description">
+          A cleanser is a skincare product used to remove dirt, oil, makeup, and impurities from the skin’s surface.
+        </p>
+
+        <h4>What it does</h4>
+        <p id="step-benefit">
+          It helps keep the skin clean, prevents clogged pores, and prepares the skin to absorb other products like serums and moisturizers.
+        </p>
+
+        <h4>Ingredients to Look for Based on Skin Type</h4>
+
+        <button id="toggle-ingredients">
+          Learn About Active Ingredients
+        </button>
+
+        <div id="ingredients-content">
+          <!-- ingredient details go here -->
+        </div>
+
+        <button id="nextStep">
+          NEXT STEP →
+        </button>
+      </div>
+
+      <!-- IMAGE ON RIGHT -->
+      <div class="step-image-card">
+        <img id="step-img" src="" alt="Step Image" />
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- JS for toggle -->
+<script>
+ 
+  const initialProduct = "{{ product or '' }}";
+  const skinType = "{{ skinType }}";
+
+  // When page loads
+  document.addEventListener("DOMContentLoaded", () => {
+    const steps = document.querySelectorAll(".sidebar .step");
+    steps.forEach(step => {
+      if (step.dataset.product === initialProduct) {
+        step.classList.add("active");
+      } else {
+        step.classList.remove("active");
+      }
+    });
+  });
+</script>
+{% endblock %}

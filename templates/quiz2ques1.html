@@ -1,0 +1,338 @@
+{% extends "index.html" %}
+
+{% block content %}
+<style>
+  body {
+    font-family: 'Helvetica Neue', sans-serif;
+    background: linear-gradient(135deg, #e6ddf1, #f3eafd);
+  }
+
+  h2 {
+    color: #770fdb;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .list, .targets {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .item {
+    background-color: #d8c4f2;
+    padding: 1rem 2rem;
+    border-radius: 20px;
+    box-shadow: 4px 4px 0 #770fdb;
+    font-size: 1.2rem;
+    color: #000;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.25s ease;
+    display: inline-block;
+  }
+
+  .item:hover {
+    transform: translateY(-3px);
+    box-shadow: 6px 6px 0 #770fdb;
+  }
+
+  .target {
+    background-color: #fefaf1;
+    border: 2px dashed #ccc;
+    min-height: 80px;
+    border-radius: 15px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.5rem;
+    box-shadow: 4px 4px 0 #770fdb;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .target.over {
+    background-color: #f5edff;
+    border-color: #770fdb;
+  }
+
+  .target.pulsed {
+    animation: pulse 0.4s ease;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 #770fdb; }
+    50% { transform: scale(1.02); box-shadow: 0 0 12px #770fdb; }
+    100% { transform: scale(1); }
+  }
+
+  .target .drop-slot {
+    margin-top: 0.5rem;
+  }
+
+  .feedback {
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-align: center;
+    min-width: 300px;
+  }
+
+  .wiggle {
+    animation: wiggle 0.4s ease;
+  }
+
+  @keyframes wiggle {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  button {
+    background: #770fdb;
+    border: none;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  button:hover {
+    background-color: #5f0bb7;
+  }
+  
+  /* Style for the global Undo button */
+  #undoBtn {
+    background: #ccc;
+    color: #333;
+  }
+  
+  #undoBtn:hover {
+    background: #bbb;
+  }
+</style>
+
+<br><br>
+
+<div class="container">
+  <h2>Q3. Drag the products into its use</h2>
+  <br><br>
+
+  <div class="row">
+    <div class="col-md-5">
+      <div class="list" id="draggables">
+        <div class="item" draggable="true" data-match="serum">Serum</div>
+        <div class="item" draggable="true" data-match="eye">Eye Cream</div>
+        <div class="item" draggable="true" data-match="spot">Spot Treatment</div>
+        <div class="item" draggable="true" data-match="moisturizer">Moisturizer</div>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      <div class="targets">
+        <div class="target" data-accept="serum">
+          <div>🌿 Targets hydration & exfoliation</div>
+          <div class="drop-slot"></div>
+        </div>
+        <div class="target" data-accept="spot">
+          <div>🔴 Clears breakouts or dark spots</div>
+          <div class="drop-slot"></div>
+        </div>
+        <div class="target" data-accept="eye">
+          <div>👁️ Hydrates delicate under-eye area</div>
+          <div class="drop-slot"></div>
+        </div>
+        <div class="target" data-accept="moisturizer">
+          <div>🔒 Locks in hydration</div>
+          <div class="drop-slot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br><br><br>
+
+  <!-- Global control buttons -->
+    <div class="feedback" id="dropWarning" style="display: none; color: #cc0000; margin-left: 0%;">
+      ⚠️ You can only drop one item in each box!
+    </div>
+    <br>
+    <center>
+    <button id="undoBtn" onclick="undoLastDrop()">Undo</button>   <button onclick="checkMatches()">Submit</button>
+    <div class="feedback" id="feedback"></div>
+    <button id="nextBtn" class="back-btn" style="display: none; margin-left: 90%;" onclick="goToNext()">Next→</button>
+    <br>
+  </center>
+  <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+  const draggables = document.getElementById('draggables');
+  const feedback = document.getElementById("feedback");
+  const nextBtn = document.getElementById("nextBtn");
+  const dropHistory = [];
+  const quizState = {{ quiz_state | tojson | default('{"answered": false}', true) }};
+  console.log(quizState);
+  const isLocked = quizState.answered === true;
+  const savedAnswers = quizState.user_answer || {};
+
+  const correctMapping = {
+    serum: "Serum",
+    eye: "Eye Cream",
+    spot: "Spot Treatment",
+    moisturizer: "Moisturizer"
+  };
+
+  const items = Array.from(document.querySelectorAll('.item'));
+  const targets = document.querySelectorAll('.target');
+
+  function addDragEvents(item) {
+    item.addEventListener('dragstart', () => {
+      draggedItem = item;
+      item.classList.add('dragging');
+    });
+
+    item.addEventListener('dragend', () => {
+      draggedItem = null;
+      item.classList.remove('dragging');
+    });
+  }
+
+  let draggedItem = null;
+
+  if (!isLocked) {
+    items.forEach(addDragEvents);
+  }
+
+  targets.forEach(target => {
+    const dropSlot = target.querySelector('.drop-slot');
+
+    if (!isLocked) {
+      target.addEventListener('dragover', e => {
+        e.preventDefault();
+        target.classList.add('over');
+      });
+
+      target.addEventListener('dragleave', () => {
+        target.classList.remove('over');
+      });
+
+      target.addEventListener('drop', () => {
+        const dropWarning = document.getElementById('dropWarning');
+
+        if (draggedItem) {
+          if (dropSlot.children.length > 0) {
+            target.classList.remove('over');
+            target.classList.add('pulsed');
+            dropWarning.style.display = 'block';
+            dropWarning.classList.add('wiggle');
+            setTimeout(() => {
+              dropWarning.classList.remove('wiggle');
+              dropWarning.style.display = 'none';
+            }, 2000);
+            return;
+          }
+
+          document.querySelectorAll('.drop-slot').forEach(slot => {
+            if (slot.contains(draggedItem)) {
+              slot.innerHTML = '';
+            }
+          });
+
+          dropSlot.innerHTML = '';
+          dropSlot.appendChild(draggedItem);
+          target.classList.remove('over');
+          target.classList.add('pulsed');
+          setTimeout(() => target.classList.remove('pulsed'), 400);
+
+          dropHistory.push({ dropSlot: dropSlot, item: draggedItem });
+        }
+      });
+    }
+  });
+
+  function undoLastDrop() {
+    if (isLocked) return;
+
+    if (dropHistory.length > 0) {
+      const lastDrop = dropHistory.pop();
+      const { dropSlot, item } = lastDrop;
+      if (dropSlot.contains(item)) {
+        dropSlot.removeChild(item);
+        draggables.appendChild(item);
+      }
+    }
+  }
+
+  function checkMatches() {
+    const userAnswers = {};
+    let correct = 0;
+
+    targets.forEach(target => {
+      const dropped = target.querySelector('.drop-slot .item');
+      const expectedKey = target.dataset.accept;
+
+      if (dropped) {
+        const droppedText = dropped.textContent.trim();
+        userAnswers[expectedKey] = droppedText;
+        if (droppedText === correctMapping[expectedKey]) {
+          correct++;
+        }
+      }
+    });
+
+    nextBtn.style.display = "inline-block";
+    if (correct === Object.keys(correctMapping).length) {
+      feedback.textContent = '🎉 All correct! You nailed it!';
+      feedback.style.color = '#008000';
+      confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 } });
+    } else {
+      feedback.textContent = `❌ You got ${correct} out of ${Object.keys(correctMapping).length} correct. Try again!`;
+      feedback.style.color = '#cc0000';
+      feedback.classList.add('wiggle');
+    }
+
+    fetch("/submit-quiz/3", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer: userAnswers })
+    })
+    .then(res => res.json())
+    .then(() => {
+      console.log("✅ Progress saved to backend");
+      lockQuiz();
+    })
+    .catch(err => console.error("❌ Save error", err));
+  }
+
+  function lockQuiz() {
+    items.forEach(item => item.setAttribute("draggable", "false"));
+    document.getElementById("undoBtn").disabled = true;
+    document.querySelectorAll('.target').forEach(target => {
+      const newTarget = target.cloneNode(true);
+      target.parentNode.replaceChild(newTarget, target);
+    });
+  }
+
+  function restorePreviousAnswers() {
+    Object.entries(savedAnswers).forEach(([key, text]) => {
+      const target = document.querySelector(`.target[data-accept="${key}"] .drop-slot`);
+      const item = items.find(i => i.textContent.trim() === text);
+      if (target && item) target.appendChild(item);
+    });
+    if (isLocked) {
+      lockQuiz();
+      nextBtn.style.display = "inline-block";
+      feedback.textContent = 'Already submitted.';
+      feedback.style.color = 'green';
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", restorePreviousAnswers);
+  function goToNext() {
+    window.location.href = "/quiz2/q2";
+  }
+</script>
+{% endblock %}

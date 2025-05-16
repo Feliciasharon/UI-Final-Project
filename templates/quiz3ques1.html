@@ -1,0 +1,193 @@
+{% extends "index.html" %}
+
+{% block content %}
+
+<style>
+  body {
+    font-family: 'Helvetica Neue', sans-serif;
+    background-color: #e6ddf1;
+    color: #333;
+  }
+
+  .quiz-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .quiz-left {
+    max-width: 600px;
+    margin-left: 20%;
+    margin-top: 5%;
+  }
+
+  .quiz-left h1 {
+    font-family: 'DM Serif Display', serif;
+    color:#770fdb;
+    font-size: 3.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .quiz-left h2 {
+    font-size: 1.6rem;
+    font-weight: 400;
+    margin-bottom: 1.2rem;
+  }
+
+  .question {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .option {
+    margin-bottom: 0.8rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+
+  .option input[type="radio"] {
+    margin-right: 0.6rem;
+    transform: scale(1.2);
+    accent-color: #770fdb;
+  }
+
+  .quiz-right img {
+    max-height: 350px;
+    object-fit: contain;
+  }
+
+  .feedback {
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+
+  .submit-btn {
+    margin-top: 1rem;
+    background: #770fdb;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .submit-btn:hover {
+    background-color: #5f0bb7;
+  }
+
+  .disabled {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+</style>
+
+<div class="quiz-section">
+  <div class="quiz-left">
+    <h1>QUIZ</h1>
+    <h2>Choose the correct option</h2>
+    <div class="question">Q5. Why is sunscreen an essential step in skincare?</div>
+
+    <label class="option"><input type="radio" name="quiz" value="wrong" data-text="Hydrates"> Hydrates</label>
+    <label class="option"><input type="radio" name="quiz" value="wrong" data-text="Removes dead skin cells"> Removes dead skin cells</label>
+    <label class="option"><input type="radio" name="quiz" value="correct" data-text="Shields UV damage and signs of aging"> Shields UV damage and signs of aging</label>
+    <label class="option"><input type="radio" name="quiz" value="wrong" data-text="Unclogs pores"> Unclogs pores</label>
+
+    <button class="submit-btn" onclick="checkQuizAnswer()">Submit</button>
+    <button id="nextBtn" class="back-btn" style="margin-top: 20px; float:right; display: none;" onclick="goToNext()">Next-></button>
+    <div class="feedback" id="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz-right">
+    <img src="{{ url_for('static', filename='images/sunscreen.png') }}" alt="Sunscreen bottle" />
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+  // const quizState = {{ quiz_state | tojson | default('{"answered": false}', true) }};
+  document.addEventListener("DOMContentLoaded", () => {
+    const checkboxes = document.querySelectorAll('input[name="quiz"]');
+    const feedback = document.getElementById("quiz-feedback");
+    const submitBtn = document.querySelector(".submit-btn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    if (quizState.answered) {
+      // Restore and lock state
+      checkboxes.forEach(cb => {
+        if (cb.dataset.text === quizState.user_answer) cb.checked = true;
+        cb.disabled = true;
+      });
+      document.querySelectorAll('.option').forEach(opt => opt.classList.add('disabled'));
+      submitBtn.disabled = true;
+
+      feedback.textContent = quizState.is_correct
+        ? "✅ Correct! Sunscreen protects from UV and signs of aging."
+        : "❌ Not quite. The right answer is: Shields UV damage and signs of aging.";
+      feedback.style.color = quizState.is_correct ? "green" : "#cc0000";
+
+      nextBtn.style.display = "inline-block";
+
+      if (quizState.is_correct && typeof confetti === "function") {
+        confetti({
+          particleCount: 120,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    submitBtn.addEventListener("click", () => {
+      const selected = document.querySelector('input[name="quiz"]:checked');
+      if (!selected) {
+        feedback.textContent = "⚠️ Please select an option.";
+        feedback.style.color = "orange";
+        return;
+      }
+
+      const isCorrect = selected.value === "correct";
+      const selectedText = selected.dataset.text;
+
+      checkboxes.forEach(cb => cb.disabled = true);
+      document.querySelectorAll('.option').forEach(opt => opt.classList.add('disabled'));
+      submitBtn.disabled = true;
+
+      feedback.textContent = isCorrect
+        ? "✅ Correct! Sunscreen protects from UV and signs of aging."
+        : "❌ Not quite. The right answer is: Shields UV damage and signs of aging.";
+      feedback.style.color = isCorrect ? "green" : "#cc0000";
+
+      nextBtn.style.display = "inline-block";
+
+      if (isCorrect && typeof confetti === "function") {
+        confetti({
+          particleCount: 120,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+      }
+
+      fetch("/submit-quiz/5", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          answer: selectedText,
+          is_correct: isCorrect
+        })
+      })
+      .then(res => res.json())
+      .then(data => console.log("Saved:", data.message))
+      .catch(err => console.error("Error saving quiz answer:", err));
+
+      sessionStorage.setItem('learnCompleted', 'true');
+      console.log('learnCompleted set to true from quiz3q1');
+    });
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="quiz-container" style="text-align: center; padding: 50px; min-height: 100vh;">
+  <h1>🔍 SKINCARE DETECTIVE</h1>
+  <p style="font-size: 20px; color: #333; margin: 20px auto; max-width: 700px;">
+    Your friend <strong>Maya</strong> has acne-prone, sensitive skin and just started breaking out. She's overwhelmed by products. Help her make smart choices!
+  </p>
+
+  <form id="detectiveQuiz" style="text-align: left; max-width: 600px; margin: 40px auto; font-size: 18px; color: #333;">
+    <div class="question-block">
+      <p><strong>1. What should Maya use to clean her face?</strong></p>
+      <label><input type="radio" name="q1" value="Cleanser with Salicylic Acid"> Cleanser with Salicylic Acid</label><br>
+      <label><input type="radio" name="q1" value="Toner with Witch Hazel"> Toner with Witch Hazel</label>
+    </div><br>
+
+    <div class="question-block">
+      <p><strong>2. Which treatment will help her most without irritation?</strong></p>
+      <label><input type="radio" name="q2" value="Spot Treatment with Sulfur"> Spot Treatment with Sulfur</label><br>
+      <label><input type="radio" name="q2" value="Retinol Serum"> Retinol Serum</label>
+    </div><br>
+
+    <div class="question-block">
+      <p><strong>3. What’s the best ingredient for moisture?</strong></p>
+      <label><input type="radio" name="q3" value="Ceramides"> Ceramides</label><br>
+      <label><input type="radio" name="q3" value="Heavy Oils"> Heavy Oils</label>
+    </div><br>
+
+    <div class="question-block">
+      <p><strong>4. True or False: Sunscreen with Zinc Oxide is good for acne-prone skin.</strong></p>
+      <label><input type="radio" name="q4" value="True"> True</label><br>
+      <label><input type="radio" name="q4" value="False"> False</label>
+    </div><br>
+
+    <center><button type="button" class="evaluate" onclick="checkDetectiveQuiz()">Submit Answers</button>
+    <p id="finalFeedback" style="margin-top: 20px; font-weight: bold;"></p></center>
+  </form>
+  <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">
+    <button onclick="history.back()" style="background: none; border: none; color: #770fdb; font-weight: bold; font-size: 16px; cursor: pointer;">&larr; BACK</button>
+    <button id="nextBtn" class="back-btn" style="margin-top: 20px; display: none;" onclick="goToNext()">Next &rarr;</button>
+  </div>
+</div>
+
+<br><br><br>
+
+<style>
+  .evaluate {
+    padding: 12px 30px;
+    background-color: #770fdb;
+    border: none;
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .evaluate:hover {
+    background-color: #5e0eb1;
+  }
+
+  .question-block {
+    background-color: #fff;
+    border: 2px solid #770fdb;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+  }
+
+  input[type="radio"] {
+    margin-right: 10px;
+  }
+</style>
+
+<script>
+  window.onload = function() {
+    const submitted = quizState.q1State.answered === true;
+
+    // Loop through all question states (q1State to q4State)
+    for (let i = 1; i <= 4; i++) {
+      const stateKey = `q${i}State`;
+      const questionState = quizState[stateKey];
+
+      if (questionState && questionState.answered) {
+        const userAnswer = questionState.user_answer;
+        const inputs = document.querySelectorAll(`input[name="q${i}"]`);
+
+        inputs.forEach(input => {
+          if (input.value === userAnswer) {
+            input.checked = true;
+          }
+          input.disabled = true;
+        });
+
+        // Optional: Log for debugging
+        console.log(`Restored Q${i}:`, userAnswer);
+        const submitBtn = document.querySelector(".evaluate");
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = 0.5;
+        document.getElementById("nextBtn").style.display = "inline-block";
+      }
+    }
+
+  };
+
+  function checkDetectiveQuiz() {
+    const form = document.getElementById("detectiveQuiz");
+    const totalQuestions = 4;
+    let allAnswered = true;
+    let userAnswers = {};
+
+    for (let i = 1; i <= totalQuestions; i++) {
+      const options = form.querySelectorAll(`input[name="q${i}"]`);
+      let answered = false;
+      options.forEach(option => {
+        if (option.checked) {
+          answered = true;
+          userAnswers[`q${i}`] = option.value;
+        }
+      });
+      if (!answered) {
+        allAnswered = false;
+        break;
+      }
+    }
+
+    const feedback = document.getElementById("finalFeedback");
+
+    if (!allAnswered) {
+      feedback.textContent = "⚠️ Please answer all the questions before submitting!";
+      feedback.style.color = "darkgoldenrod";
+      return;
+    }
+
+    fetch("/submit-detective-quiz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers: userAnswers })
+    })
+    .then(response => response.json())
+    .then(data => {
+      const correctCount = data.total_correct;
+      const total = 4;
+
+      if (correctCount === total) {
+        feedback.textContent = "🎉 You helped Maya clear her skin safely! You've earned the ‘Scenario Master’ badge! 😊";
+        feedback.style.color = "green";
+      } else {
+        feedback.textContent = `❌ You got ${correctCount}/${total} correct. We're sad that you missed the 'Scenario Master' badge :(`;
+        feedback.style.color = "red";
+      }
+
+      document.getElementById("nextBtn").style.display = "inline-block";
+      const radios = form.querySelectorAll("input[type='radio']");
+      radios.forEach(radio => radio.disabled = true);
+      // localStorage.setItem("detectiveQuizState", JSON.stringify(userAnswers));
+      // localStorage.setItem("detectiveQuizSubmitted", "true");
+    });
+  }
+</script>
+{% endblock %}
